@@ -1,0 +1,3 @@
+<?php
+$Router = \AB\Tools\Rest\Router::instance();
+$Router->addRoute(['component'=>'ab:form.iblock', 'class' => '\AB\Forms\FormAdd'], 'rest/AB/Feedback');
