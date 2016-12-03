@@ -1,0 +1,29 @@
+{
+  "init":{
+    "class": "Creator",
+    "example": "php console init",
+    "desc":"Создание файлов-болванок скриптов, которых еще нет, описанных в файле настроек command.json"
+  },
+  "make": {
+    "script": {
+      "class": "Creator",
+      "params": "-name ([a-zA-Z]+)",
+      "example": "php console make:script -name MyNewScript",
+      "desc":"Создание файла-болванки скрипта"
+    },
+    "cmp": {
+      "class": "AddComponent",
+      "params": "-name %s -f (local|bitrix) -t %s -c %s",
+      "example": "php console make:cmp -name esd:news.list -f local -t template_name -c NewsList -npm",
+      "desc":"Создание компонента"
+    }
+  },
+  "random": {
+    "iblock":{
+      "class": "RndIblock",
+      "params": "-id %d -count_section %d -count_el %d -img %s",
+      "example": "php console random:iblock -id 12 -count_section 30 -count_el 20 -img y",
+      "desc":"Рандомизация элементов инфоблока"
+    }
+  }
+}
