@@ -89,6 +89,10 @@ class AddComponent implements IConsole
 			throw new \Exception('Component '.$params['-name'].' is already exist');
 		}
 		$ClassFile->getDirectory()->create();
+
+		$jsApp = new File($ClassFile->getDirectory()->getPhysicalPath().'/app/app.js');
+		$jsApp->putContents('');
+
 		$templeClass = file_get_contents(dirname(__FILE__).'/temple/cmp/class');
 		$templeClass = str_replace("#CLASS#", $params['-c'], $templeClass);
 		$res = $ClassFile->putContents($templeClass);
