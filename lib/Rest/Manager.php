@@ -1,18 +1,23 @@
 <?php
 /**
- * Created by PhpStorm.
+ * Created by OOO 1C-SOFT.
  * User: dremin_s
- * Date: 15.08.2016
- * Time: 12:16
+ * Date: 19.12.2016
  */
 
 namespace AB\Tools\Rest;
 
-use AB\Tools\EventHandlers;
-use AB\Tools\Helpers\DataCache;
 use Bitrix\Main;
 use Bitrix\Main\Web;
 
+/**
+ * Class Base
+ * @package Esd\Ajax
+ *
+ * Коды ошибок:
+ *  0 - 100 внутренние, системные ошибки, их можно показывать на ружу,
+ *  только при установленном параметре $this->showSystemError = true;
+ */
 class Manager
 {
 	protected $request;
@@ -21,161 +26,105 @@ class Manager
 	protected $namespace;
 	protected $class;
 	protected $action;
-	protected $component;
+	
+	protected $showSystemError = true;
 
+	/** @var Web\Uri */
+	protected $Uri;
+	protected $params = [];
+	protected $route = null;
+	private $htmlMode = false;
+
+	/** @var AjaxResult */
+	protected $result;
 	/** @var  Main\Type\Dictionary */
 	protected $data;
-	/** @var  Main\Result */
-	private $result;
-	private $htmlMode = false;
-	private $isComponent = false;
-	private $queryUrl;
 
-	/**
-	 * Manager constructor.
-	 */
+	const SYSTEM_ERR_CODE = 'SYSTEM';
+
 	public function __construct()
 	{
 		$this->request = Main\Context::getCurrent()->getRequest();
 		$this->server = Main\Context::getCurrent()->getServer();
 	}
-
+	
 	/**
 	 * @method parseUrl
 	 * @throws RestException
 	 */
 	public function parseUrl()
 	{
-		$action = $class = $nameSpace = null;
+		$query = $this->request->get('data');
+		$this->Uri = new Web\Uri($query);
+		$arQuery = explode('/', $this->Uri->getPath());
+		$action = array_pop($arQuery);
 
-		$Uri = new Web\Uri($this->request->getRequestUri());
-		$url = $Uri->getPath();
-		$url = trim($url, '!"#$%&\'()*+,-.@:;<=>[\\]^_`{|}~');
+		$querySearch[] = '';
+		$querySearch = implode('/', array_merge($querySearch, $arQuery));
 
-		$arUrl = explode('/', $url);
-		TrimArr($arUrl);
-
-		$action = array_pop($arUrl).'Action';
-		$this->queryUrl = $Uri->getQuery();
-
-		$url = implode('/', $arUrl);
-		$route = Router::instance()->getRoute($url);
-		if ($route && !empty($route['component']) && !empty($route['class'])){
-			$this->setMainParams($route['class'], $action, $route['component']);
+		$class = str_replace(DIRECTORY_SEPARATOR, '\\', $querySearch);
+		if (class_exists($class)){
+			$this->setParams([
+				'CLASS' => $class,
+				'ACTION' => $action,
+			]);
 		} else {
-			$url = preg_replace('#^rest|\/rest#i', '', $url);
-			$class = str_replace('/', '\\', $url);
-			$this->setMainParams($class, $action);
-		}
-	}
+			$server = \Bitrix\Main\Context::getCurrent()->getServer();
+			$siteId = Main\Context::getCurrent()->getSite();
+			if (strlen($siteId) == 0){
+				$arSite = \Bitrix\Main\SiteDomainTable::getRow(['filter' => ['=DOMAIN' => $server->get('HTTP_HOST')]]);
+				$siteId = $arSite['LID'];
+			}
 
-	/**
-	 * @method setMainParams
-	 * @param $class
-	 * @param $action
-	 * @param string $component
-	 */
-	protected function setMainParams($class, $action, $component = '')
-	{
-		$this->setClass($class);
-		$this->setAction($action);
-		if (strlen($component) > 0){
-			\CBitrixComponent::includeComponentClass($component);
-			$this->isComponent = $component;
+			$arRoute = Main\UrlRewriter::getList($siteId, ['CONDITION' => $querySearch])[0];
+			if (empty($arRoute)){
+				throw new RestException('Route is not exist', 40);
+			}
+			$this->route = $arRoute;
+			$mainParams = [
+				'CLASS' => $arRoute['PATH'],
+				'MODULE' => $arRoute['ID'],
+				'ACTION' => $action,
+			];
+			if (preg_match('/:/', $arRoute['ID'])){
+				unset($mainParams['MODULE']);
+				$mainParams['COMPONENT'] = $arRoute['ID'];
+			}
+
+			$this->setParams($mainParams);
 		}
-		$this->setData();
+
+		return $this;
 	}
 
 	/**
 	 * @method init
 	 * @return $this
-	 * @throws RestException
 	 */
 	public function init()
 	{
-		$result = new Main\Result();
-		$resultAction = null;
+		$this->setData();
+		$this->result = new AjaxResult();
+
 		try {
 			if ($this->request->get('sessid') || $this->request->getPost('sessid')){
 				if (!check_bitrix_sessid()){
 					throw new RestException('sessid is not valid');
 				}
 			}
-			if ($this->getClass() == '\\'){
-				if (is_callable($this->getAction())){
-					$resultAction = call_user_func($this->getAction(), $this->getData()->toArray());
-				} else {
-					throw new RestException('Action is not callable');
-				}
-			} else {
-				$resultAction = $this->instanceActionClass();
-			}
-		} catch (\ReflectionException $err) {
-			$result->addError(new Main\Error($err->getMessage(), $err->getCode()));
-		} catch (RestException $err) {
-			$result->addError(new Main\Error($err->getMessage(), $err->getCode()));
-		} catch (\Exception $err) {
-			$result->addError(new Main\Error($err->getMessage(), $err->getCode()));
-		}
 
-		$out = [
-			'DATA' => $resultAction,
-			'ERRORS' => count($result->getErrorMessages()) > 0 ? $result->getErrorMessages() : null,
-		];
+			$resultMethod = $this->instanceActionClass();
 
-		if (!is_null($out['ERRORS'])){
-			$out['STATUS'] = 0;
-		} else {
-			$out['STATUS'] = 1;
+			$this->result->setData($resultMethod);
+
+		} catch (\ReflectionException $Reflection) {
+			$this->result->addSystemError(new Main\Error($Reflection->getMessage(), 30));
+
+		} catch (\Exception $e) {
+			$this->result->addError(new Main\Error($e->getMessage(), $e->getCode()));
 		}
-		$result->setData($out);
-		$this->setResult($result);
 
 		return $this;
-	}
-
-	/**
-	 * @method instanceActionClass
-	 * @return mixed
-	 */
-	protected function instanceActionClass()
-	{
-		$action = $this->getAction();
-		$class = $this->getClass();
-
-		$initClass = new \ReflectionClass($class);
-		$dataPost = $this->getData()->toArray();
-		if ($this->isComponent){
-			/** @var \CBitrixComponent $ob */
-			$ob = $initClass->newInstance();
-
-			$cache = new DataCache(EventHandlers::CACHE_PARAM_TTL, EventHandlers::CACHE_PARAM_DIR, EventHandlers::CACHE_PARAM_ID);
-			if ($cache->isValid()){
-				$params = $cache->getData();
-			} else {
-				$ParametersTable = \Bitrix\Main\Component\ParametersTable::getEntity();
-				if (!$ParametersTable->getField('PARAMETERS')->isSerialized()){
-					$ParametersTable->getField('PARAMETERS')->setSerialized();
-				}
-				/** @var Main\Entity\DataManager $classParams */
-				$classParams = $ParametersTable->getDataClass();
-				$rowParam = $classParams::getRow([
-					'select' => ['PARAMETERS'],
-					'filter' => ['=COMPONENT_NAME' => $this->isComponent, '=SITE_ID' => Main\Context::getCurrent()->getSite()],
-				]);
-				$cache->addCache($rowParam['PARAMETERS']);
-				$params = $rowParam['PARAMETERS'];
-			}
-
-			$ob->onPrepareComponentParams($params);
-
-		} else {
-			$ob = $initClass->newInstance();
-		}
-
-		$initClass->getMethod($action);
-
-		return $ob->$action($dataPost);
 	}
 
 	/**
@@ -184,21 +133,190 @@ class Manager
 	 */
 	public function getResult()
 	{
-		$data = $this->result->getData();
+		if (defined('DEV_MODE')){
+			$this->showSystemError = true;
+		}
 
-		if ($this->getHtmlMode() === true){
-			return $data['DATA'];
-		} else {
+		$result = ['STATUS' => 1, 'ERRORS' => null, 'DATA' => null];
+
+		$result['DATA'] = $this->result->getData();
+		if (!$this->result->isSuccess()){
+			$result['STATUS'] = 0;
+			$errors = $this->result->getErrorMessages();
+			$systems = $this->result->getSystemMessages();
+
+			if (count($errors) > 0){
+				$result['ERRORS'] = $errors;
+			}
+			if (count($systems) > 0 && $this->showSystemError === true){
+				$result['SYSTEMS'] = $systems;
+			}
+		}
+
+		if (!$this->getHtmlMode()){
 			try {
-				$out = Web\Json::encode($data);
+				return Web\Json::encode($result);
 			} catch (Main\ArgumentException $err) {
-				$out['DATA'] = null;
-				$out['ERRORS'][] = $err->getMessage();
-				$out['STATUS'] = 0;
+				return $err->getMessage();
+			}
+		} else {
+			return $result['DATA'];
+		}
+	}
+
+
+	/**
+	 * @method setData
+	 */
+	public function setData()
+	{
+		$post = null;
+		$contentType = $this->server->get('HTTP_ACCEPT');
+
+		if (preg_match('{json}i', $contentType) != false){
+			$this->setHtmlMode(false);
+		} else {
+			$this->setHtmlMode(true);
+		}
+
+		if ($this->request->isPost()){
+			if ($this->getHtmlMode() === false){
+				$data = Web\Json::decode(file_get_contents('php://input'));
+			} else {
+				$data = $this->request->getPostList()->toArray();
+			}
+		} else {
+			$data = $this->request->toArray();
+		}
+
+		unset($data['data']);
+		unset($data['type']);
+		unset($data['action']);
+
+		$this->data = new Main\Type\Dictionary($data);
+	}
+
+	/**
+	 * @method instanceActionClass
+	 * @return mixed
+	 */
+	public function instanceActionClass()
+	{
+		$initClass = new \ReflectionClass($this->getParams('CLASS'));
+		$ob = $initClass->newInstance();
+		$action = $this->getParams('ACTION');
+		try {
+			if (!is_callable([$ob, $action])){
+				throw new RestException('Действие '.$action.' нельзя вызвать.', 20);
 			}
 
-			return $out;
+			$component = $this->getParams('COMPONENT');
+			if (strlen($component) > 0){
+				if (strlen($this->server->get('HTTP_REFERER')) > 0){
+					$Uri = new Web\Uri($this->server->get('HTTP_REFERER'));
+					$realPath = $Uri->getPath();
+					if (!preg_match('/\/index.php$/i', $Uri->getPath()) && !substr($realPath, -1, 1) != 'p'){
+						$realPath .= 'index.php';
+					}
+					$arParams = Main\Component\ParametersTable::getRow([
+						'filter' => ['=REAL_PATH' => $realPath, '=COMPONENT_NAME' => $component],
+					]);
+					$ob->onPrepareComponentParams(unserialize($arParams['PARAMETERS']));
+				}
+			}
+
+			return $ob->$action($this->getData()->toArray());
+		} catch (\Exception $err) {
+			$code = $err->getCode();
+			if ($code < 200 && $code != 0){
+				$this->result->addSystemError(new Main\Error($err->getMessage(), $err->getCode()));
+			} else {
+				$this->result->addError(new Main\Error($err->getMessage(), $err->getCode()));
+			}
 		}
+	}
+	/**
+	 * @method getData - get param data
+	 * @return Main\Type\Dictionary
+	 */
+	public function getData()
+	{
+		return $this->data;
+	}
+	/**
+	 * @method getParams
+	 * @param string $k
+	 *
+	 * @return array|mixed
+	 */
+	public function getParams($k = '')
+	{
+		if(strlen($k) > 0){
+			return $this->params[$k];
+		}
+
+		return $this->params;
+	}
+
+	/**
+	 * @method setParams
+	 * @param array $params
+	 *
+	 * @return $this
+	 */
+	public function setParams(array $params = [])
+	{
+		foreach ($params as $name => $param) {
+			$this->addParams($name, $param);
+		}
+
+		return $this;
+	}
+
+	/**
+	 * @method addParams
+	 * @param $k
+	 * @param $val
+	 *
+	 * @return $this
+	 * @throws RestException
+	 */
+	public function addParams($k, $val)
+	{
+		$this->params[$k] = $val;
+
+		if($k == 'ACTION' && strlen($val) == 0){
+			throw new RestException('ACTION is empty', 10);
+		}
+		if($k == 'MODULE'){
+			Main\Loader::includeModule($val);
+		}
+		if($k == 'COMPONENT'){
+			\CBitrixComponent::includeComponentClass($val);
+		}
+
+		return $this;
+	}
+
+	/**
+	 * @method getShowSystemError - get param showSystemError
+	 * @return bool
+	 */
+	public function getShowSystemError()
+	{
+		return $this->showSystemError;
+	}
+
+	/**
+	 * @param bool $showSystemError
+	 *
+	 * @return Manager
+	 */
+	public function setShowSystemError($showSystemError)
+	{
+		$this->showSystemError = $showSystemError;
+
+		return $this;
 	}
 
 	/**
@@ -232,116 +350,6 @@ class Manager
 	}
 
 	/**
-	 * @method getClass - get param class
-	 * @return mixed
-	 */
-	public function getClass()
-	{
-		return $this->class;
-	}
-
-	/**
-	 * @method setClass - set param Class
-	 * @param mixed $class
-	 */
-	public function setClass($class)
-	{
-		$this->class = $class;
-	}
-
-	/**
-	 * @method getData - get param data
-	 * @return Main\Type\Dictionary
-	 */
-	public function getData()
-	{
-		return $this->data;
-	}
-
-	/**
-	 * @method getNamespace - get param namespace
-	 * @return mixed
-	 */
-	public function getNamespace()
-	{
-		return $this->namespace;
-	}
-
-	/**
-	 * @method setNamespace - set param Namespace
-	 * @param mixed $namespace
-	 */
-	public function setNamespace($namespace)
-	{
-		if (substr($namespace, 0, 1) != '\\'){
-			$namespace = '\\'.$namespace;
-		}
-
-		$this->namespace = $namespace;
-	}
-
-	/**
-	 * @method setData
-	 */
-	public function setData()
-	{
-		$post = null;
-		$contentType = $this->server->get('HTTP_ACCEPT');
-
-		if (preg_match('{json}i', $contentType) != false){
-			$this->setHtmlMode(false);
-		} else {
-			$this->setHtmlMode(true);
-		}
-
-		if ($this->request->isPost()){
-			if ($this->getHtmlMode() === false){
-				$data = Web\Json::decode(file_get_contents('php://input'));
-			} else {
-				$data = $this->request->getPostList()->toArray();
-			}
-		} else {
-			$data = $this->request->toArray();
-		}
-
-		unset($data['type']);
-		unset($data['action']);
-
-		if (strlen($this->queryUrl) > 0 && $this->request->isPost()){
-			$param = [];
-			$fragment = explode('&', $this->queryUrl);
-			foreach ($fragment as $item) {
-				preg_match('/(.*)=(.*)/', $item, $match);
-				$param[$match[1]] = $match[2];
-			}
-			TrimArr($param);
-			if (!isset($data['request'])){
-				$data['request'] = $param;
-			} else {
-				$data = array_merge($data, $param);
-			}
-		}
-
-		$this->data = new Main\Type\Dictionary($data);
-	}
-
-	/**
-	 * @method addData
-	 * @param $k
-	 * @param $val
-	 *
-	 * @return $this
-	 */
-	public function addData($k, $val)
-	{
-		$vv = self::sanitizeData($val);
-
-		$this->data->offsetSet($k, $vv);
-
-		return $this;
-	}
-
-	/**
 	 * @method sanitizeData
 	 * @param $data
 	 *
@@ -350,7 +358,7 @@ class Manager
 	private static function sanitizeData($data)
 	{
 		foreach ($data as $code => $value) {
-			if (is_array($value)){
+			if(is_array($value)){
 				$data[$code] = self::sanitizeData($value);
 			} else {
 				$data[$code] = htmlspecialcharsbx($value);

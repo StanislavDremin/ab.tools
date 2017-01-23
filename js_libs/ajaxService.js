@@ -3,7 +3,7 @@ import Swal from 'sweetalert';
 
 CAjax.defaults.headers.post['Content-Type'] = 'application/json';
 
-export default class Ajax {
+class AjaxService {
 	constructor(params = {}, option = {}){
 		this.params = {
 			headers: {'Accept': 'application/json', 'ContentType': 'application/json'},
@@ -37,3 +37,5 @@ export default class Ajax {
 		return CAjax.create(this.params);
 	}
 }
+
+export default AjaxService;
