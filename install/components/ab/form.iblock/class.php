@@ -1,6 +1,4 @@
-<?php 
-namespace AB\Forms;
-
+<?php namespace AB\Tools\Forms;
 /** @var \CBitrixComponent $this */
 /** @var array $arParams */
 /** @var array $arResult */
@@ -8,87 +6,150 @@ namespace AB\Forms;
 /** @var string $componentName */
 /** @var string $componentTemplate */
 /** @var \CBitrixComponent $component */
+/** @global \CUser $USER */
+/** @global \CMain $APPLICATION */
 
-use Bitrix\Main\Loader;
+use AB\Tools\Debug;
 use Bitrix\Main\Localization\Loc;
 use Bitrix\Main\Entity;
-use AB\Tools;
+use Bitrix\Main\Loader;
+use Bitrix\Iblock;
+
+Loc::loadMessages(__FILE__);
 
 Loader::includeModule('iblock');
-Loader::includeModule('ab.tools');
+Loader::includeModule('ab.iblock');
 
-class FormAdd extends \CBitrixComponent
+class FormIblock extends \CBitrixComponent
 {
+	/** @var array|bool|\CDBResult|\CUser|mixed */
 	protected $USER;
 
 	/**
-	 * @param \CBitrixComponent|null $component
+	 * @var \CIBlockElement
 	 */
-	public function __construct($component)
+	private $CIBlockElement;
+
+	/**
+	 * @param \CBitrixComponent|bool $component
+	 */
+	function __construct($component = false)
 	{
-		global $USER;
 		parent::__construct($component);
+		global $USER;
 		$this->USER = $USER;
+
+		$this->CIBlockElement = new \CIBlockElement();
 	}
 
 	/**
 	 * @method onPrepareComponentParams
-	 * @param $arParams
+	 * @param array $arParams
 	 *
-	 * @return mixed
+	 * @return array
 	 */
 	public function onPrepareComponentParams($arParams)
 	{
-		if(intval($arParams['CACHE_TIME']) == 0)
-			$arParams['CACHE_TIME'] = 86400;
+		$this->arParams = $arParams;
 
 		return $arParams;
 	}
 
-	public function saveAction($post = [])
+	public function getUser()
 	{
-		$arParams = Tools\Helpers\FormIblock::decodeParams($post['PARAMS']);
-		$this->arParams = $this->onPrepareComponentParams($arParams);
-		$arFields = $post['FIELDS'];
+		global $USER;
+		if (!is_object($USER))
+			$USER = new \CUser();
 
-		$save = [
-			'IBLOCK_ID' => $this->arParams['IBLOCK_ID'],
-			'NAME' => date('d.m.Y H:i:s'),
-			'PREVIEW_TEXT' => strlen($arFields['PREVIEW_TEXT']) > 0 ? $arFields['PREVIEW_TEXT'] : false,
-			'PREVIEW_TEXT_TYPE' => 'html',
-			'DETAIL_TEXT' => strlen($arFields['DETAIL_TEXT']) > 0 ? $arFields['DETAIL_TEXT'] : false,
-			'DETAIL_TEXT_TYPE' => 'html',
+		return $USER;
+	}
+
+	public function getProperties()
+	{
+		$obProp = Iblock\PropertyTable::getList([
+			'select' => ['ID', 'NAME', 'CODE', 'SORT', 'ACTIVE', 'DEFAULT_VALUE', 'PROPERTY_TYPE', 'LIST_TYPE', 'MULTIPLE', 'IS_REQUIRED'],
+			'filter' => ['=IBLOCK_ID' => $this->arParams['IBLOCK_ID'], '=ACTIVE' => 'Y'],
+			'order' => ['SORT' => 'ASC', 'NAME' => 'ASC'],
+		]);
+
+		while ($prop = $obProp->fetch()) {
+			$this->arResult['PROPS'][$prop['CODE']] = $prop;
+		}
+	}
+
+	public function addAsset()
+	{
+		$libPath = '/local/modules/ab.tools/asset';
+		$assets['formLib'] = [
+			'js' => [
+				$libPath.'/js/shim/es6-shim.min.js',
+				$libPath.'/js/shim/es6-sham.min.js',
+				$libPath.'/js/is.min.js',
+				$libPath.'/js/sweetalert.min.js',
+			],
+			'css' => [
+				$libPath.'/css/preloaders.css',
+				$libPath.'/css/sweetalert.css',
+			],
 		];
 
-		unset($arFields['PREVIEW_TEXT']);
-		unset($arFields['DETAIL_TEXT']);
+		foreach ($assets as $code => $asset) {
+			\CJSCore::RegisterExt($code, $asset);
+		}
+	}
 
-		foreach ($arFields as $code => $field) {
-			$save['PROPERTY_VALUES'][$code] = $field;
+	public function saveFormAction($data = [])
+	{
+		$save = [
+			'IBLOCK_ID' => $this->arParams['IBLOCK_ID'],
+			'NAME' => 'Заявка '.date('d.m.Y H:i:s'),
+		];
+
+		if (isset($data['PREVIEW_TEXT'])){
+			$save['PREVIEW_TEXT'] = $data['PREVIEW_TEXT'];
+			$save['PREVIEW_TEXT_TYPE'] = 'html';
+			unset($data['PREVIEW_TEXT']);
+		}
+		if (isset($data['DETAIL_TEXT'])){
+			$save['DETAIL_TEXT'] = $data['DETAIL_TEXT'];
+			$save['DETAIL_TEXT_TYPE'] = 'html';
+			unset($data['DETAIL_TEXT']);
 		}
 
-		$CIBlockElement = new \CIBlockElement();
-		$result = $CIBlockElement->Add($save, false, false);
+		unset($data['sessid']);
 
-		$out = null;
-		if(intval($result) > 0){
-			$out = $result;
-		} else {
-			throw new \Exception(strip_tags($CIBlockElement->LAST_ERROR));
+		foreach ($data as $k => $value) {
+			$save['PROPERTY_VALUES'][$k] = $value['VALUE'];
 		}
 
-		return $out;
+		$ID = $this->CIBlockElement->Add($save, false, false);
+
+		if(intval($ID) == 0){
+			throw new \Exception(strip_tags($this->CIBlockElement->LAST_ERROR));
+		}
+
+		return [
+			'ID' => $ID,
+			'GOOD_MESSAGE' => $this->arParams['GOOD_MESSAGE']
+		];
 	}
 
 	/**
 	 * @method executeComponent
+	 * @return mixed|void
 	 */
 	public function executeComponent()
 	{
+		$this->addAsset();
 
-		$this->arResult['ENC'] = Tools\Helpers\FormIblock::encodeParams($this->arParams);
+		if (intval($this->arParams['IBLOCK_ID']) == 0){
+			ShowError('Нет ИД инфоблока');
+
+			return false;
+		}
+
+		$this->getProperties();
 
 		$this->includeComponentTemplate();
 	}
-
 }

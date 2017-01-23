@@ -56,8 +56,9 @@ class Manager
 	{
 		$query = $this->request->get('data');
 		$this->Uri = new Web\Uri($query);
+
 		$arQuery = explode('/', $this->Uri->getPath());
-		$action = array_pop($arQuery);
+		$action = array_pop($arQuery).'Action';
 
 		$querySearch[] = '';
 		$querySearch = implode('/', array_merge($querySearch, $arQuery));

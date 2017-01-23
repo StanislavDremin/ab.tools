@@ -54,8 +54,11 @@ class ab_tools extends CModule
 		$root = \Bitrix\Main\Application::getDocumentRoot();
 
 		CopyDirFiles(__DIR__ . '/components/ab', $root . "/local/components/ab", true, true);
-		CopyDirFiles(__DIR__ . '/public/forms', $root . "/forms", true, true);
 		CopyDirFiles(__DIR__ . '/public/webpack', $root . "/local/webpack", true, true);
+		CopyDirFiles(__DIR__ . '/public/console', $root . "/", true, true);
+
+		$File = new IO\File($root.'/console');
+		$File->putContents(file_get_contents(__DIR__.'/public/console'));
 
 		return true;
 	}
@@ -76,20 +79,33 @@ class ab_tools extends CModule
 	{
 		$arUrl = UrlRewriter::getList(SITE_ID, ['ID' => 'restModule']);
 
-		UrlRewriter::add(SITE_ID, [
-			'CONDITION' => '#^/rest/(.*)#',
-			'PATH' => '/rest/index.php',
-			'RULE' => 'action=$1',
-			'ID' => 'restModule',
-			'SORT' => 100500
-		]);
+		if(empty($arUrl)){
+			UrlRewriter::add(SITE_ID, [
+				'CONDITION' => '#^/rest/(.*)#',
+				'PATH' => '/rest/index.php',
+				'RULE' => 'data=$1',
+				'ID' => 'restModule',
+				'SORT' => 100500
+			]);
+		}
+		$arUrlForm = UrlRewriter::getList(SITE_ID, ['ID' => 'ab:form.iblock','CONDITION' => '/forms/iblock']);
+		if(empty($arUrlForm)){
+			UrlRewriter::add(SITE_ID, [
+				'CONDITION' => '/forms/iblock',
+				'PATH' => '\\AB\\Tools\\Forms\\FormIblock',
+				'RULE' => '',
+				'ID' => 'ab:form.iblock',
+				'SORT' => 100510
+			]);
+		}
+
 		$root = \Bitrix\Main\Application::getDocumentRoot();
 		$File = new IO\File($root . '/rest/index.php');
 		$File->getDirectory()->create();
 		$temple = file_get_contents(__DIR__ . '/rest/.temple');
 		$File->putContents($temple);
 
-		CopyDirFiles(__DIR__ . '/rest/.routes', $root . "/local/php_interface/ab.tools/routes.php", true, true);
+//		CopyDirFiles(__DIR__ . '/rest/.routes', $root . "/local/php_interface/ab.tools/routes.php", true, true);
 	}
 
 	public function addEvents()

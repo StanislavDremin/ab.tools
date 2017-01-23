@@ -1,0 +1,46 @@
+#!/usr/bin/env php
+<?php
+$_SERVER["DOCUMENT_ROOT"] = realpath(dirname(__FILE__));
+$DOCUMENT_ROOT = $_SERVER["DOCUMENT_ROOT"];
+
+define("NO_KEEP_STATISTIC", true);
+define("NOT_CHECK_PERMISSIONS",true);
+require($_SERVER["DOCUMENT_ROOT"]."/bitrix/modules/main/include.php");
+
+use Bitrix\Main\Loader;
+use AB\Tools\Console;
+
+Loader::includeModule('ab.tools');
+
+$command = $argv;
+array_shift($command);
+
+if($command[0] == '-h' || $command[0] == '-help' || $command[0] == ''){
+	Console\Process::getHelp();
+
+	exit;
+}
+
+try {
+	$arInit = Console\Process::getCommand($command);
+
+	if($command[0] == 'i' || $command[0] == 'init'){
+		$arInit['class'] = '\Esd\Console\Scripts\InitCreator';
+	}
+
+	$Reflection = new ReflectionClass($arInit['class']);
+	$instance = $Reflection->newInstance($arInit);
+	if(!is_callable([$instance, 'run'])){
+		throw new \Exception("Method 'run' is not callable");
+	}
+	$instance->run($arInit['params']);
+
+	Console\ProgressBar::showGood('Finito la comedia!');
+
+} catch (\Bitrix\Main\ArgumentException $e){
+	Console\Process::getException($e);
+} catch (\Exception $e){
+	Console\Process::getException($e);
+}
+
+exit("\n");

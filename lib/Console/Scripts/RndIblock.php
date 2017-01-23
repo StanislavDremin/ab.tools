@@ -5,11 +5,12 @@
  * Date: 29.11.2016
  */
 
-namespace AB\Tools\Console;
+namespace AB\Tools\Console\Scripts;
 
 use Bitrix\Main\Loader;
 use Bitrix\Main\Web\HttpClient;
 use Bitrix\Main\IO;
+use AB\Tools\Console\ProgressBar;
 
 Loader::includeModule('iblock');
 
@@ -76,8 +77,10 @@ class RndIblock implements IConsole
 	 * @method run - Это основной метод для запуска скрипта
 	 * @throws \Exception
 	 */
-	public function run()
+	public function run($params)
 	{
+		$this->params['params'] = $params;
+
 		$iblockId = intval($this->params['params']['-id']);
 		if($iblockId == 0){
 			throw new \Exception('IBLOCK_ID is null');

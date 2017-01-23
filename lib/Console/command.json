@@ -14,7 +14,7 @@
     "cmp": {
       "class": "AddComponent",
       "params": "-name %s -f (local|bitrix) -t %s -c %s",
-      "example": "php console make:cmp -name esd:news.list -f local -t template_name -c NewsList -npm",
+      "example": "php console make:cmp -name esd:news.list -f local -t template_name -c NewsList -npm y",
       "desc":"Создание компонента"
     }
   },

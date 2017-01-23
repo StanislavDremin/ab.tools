@@ -45,25 +45,34 @@ class Process
 		$k = $v = $combine = [];
 
 		if (!empty($arParams)){
-			foreach ($init as $item) {
+
+			foreach ($init as $c => $item) {
 				if (substr($item, 0, 1) == '-'){
 					$arItem = explode('=', $item);
-					$k[] = $arItem[0];
-					if ($arItem[1]){
-						$v[] = $arItem[1];
+					if($arItem[1]){
+						$combine[$arItem[0]] = $arItem[1];
+						continue;
+					} else {
+						$combine[$arItem[0]] = false;
+						if(isset($init[$c + 1])){
+							if(substr($init[$c + 1], 0, 1) == '-'){
+								continue;
+							} else{
+								$combine[$arItem[0]] = $init[$c + 1];
+								continue;
+							}
+						}
 					}
 				} else {
-					$v[] = $item;
+					$combine[] = $item;
 				}
 			}
-
-			$combine = array_combine($k, $v);
 
 			self::validate($arParams['params'], $combine);
 
 			$class = $commands[$type[0]][$type[1]]['class'];
 			if (substr($class, 0, 1) != '\\'){
-				$class = __NAMESPACE__.'\\'.$class;
+				$class = __NAMESPACE__.'\\Scripts\\'.$class;
 			}
 
 			return [
@@ -87,9 +96,12 @@ class Process
 			'%s' => '\w+',
 			'%d' => '\d+',
 		];
-
 		foreach ($orig as $name => $item) {
-			preg_match('/'.$name.'\s(.*)|'.$name.'=(.*)/i', $temple, $m);
+			if(!is_int($name)){
+				preg_match('/'.$name.'\s(.*)|'.$name.'=(.*)/i', $temple, $m);
+			} else {
+				preg_match('/'.$name.'\s(.*)|'.$name.'=(.*)/i', $temple, $m);
+			}
 			if ($rules[$m[1]]){
 				$rul = $rules[$m[1]];
 			} elseif (substr($m[1], 0, 1) == '(' && substr($m[1], -1, 1) == ')') {
@@ -97,7 +109,7 @@ class Process
 				$rul = $reg[1];
 			}
 
-			if (!preg_match("/".$rul."/", $item)){
+			if (!empty($rul) && !preg_match("/".$rul."/", $item)){
 				throw new Main\ArgumentException('parameter '.$name.' failed validation');
 			}
 		}
@@ -109,16 +121,6 @@ class Process
 
 		ProgressBar::showGood('Commands list', true);
 		ProgressBar::pre($arCommands);
-//		$text = "";
-//		foreach ($arCommands as $code => $command) {
-//			$text .= "\r{$code}\n";
-//			$text .= "|\n";
-//			$text .= "|____";
-//			foreach ($command as $ccode => $value) {
-//				$text .= $ccode;
-//			}
-//		}
-//		ProgressBar::consoleLog($text);
 	}
 
 	/**
@@ -129,9 +131,9 @@ class Process
 	{
 		echo "\r\n";
 		echo "\x1b[31mERROR:\n
-        \x1b[31;1m".$e->getMessage()."\r
-        \nCode: ".$e->getCode()."
-        \rFile: ".$e->getFile()."
-        \rLine: ".$e->getLine()."\e[0m\n\n";
+		\x1b[31;1m".$e->getMessage()."\r
+		\nCode: ".$e->getCode()."
+		\rFile: ".$e->getFile()."
+		\rLine: ".$e->getLine()."\e[0m\n\n";
 	}
 }

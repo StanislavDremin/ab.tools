@@ -1,0 +1,28 @@
+.suggestion {
+	display: block;
+	position: absolute;
+	background: #fff;
+	z-index: 10;
+	list-style: none;
+	margin: 0; padding: 0;
+	border: 1px solid #cecece;
+	-webkit-box-shadow: 0 1px 2px rgba(1, 1, 0, 0.1);
+	-moz-box-shadow: 0 1px 2px rgba(1, 1, 0, 0.1);
+	box-shadow: 0 1px 2px rgba(1, 1, 0, 0.1);
+	width: 29.3%;
+	height: 250px;
+	overflow: auto;
+}
+.suggestion li {
+	padding: 4px 10px;
+	cursor: pointer;
+}
+.suggestion li.active {
+	background: #45b8ec;
+	color: #fff;
+}
+.error_city {
+	color: red;
+	position: absolute;
+	margin-top: -25px;
+}

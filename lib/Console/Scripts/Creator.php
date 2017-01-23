@@ -5,10 +5,12 @@
  * Date: 24.11.16
  */
 
-namespace AB\Tools\Console;
+namespace AB\Tools\Console\Scripts;
 
 use Bitrix\Main\Application;
 use Bitrix\Main\IO;
+use AB\Tools\Console\ProgressBar;
+use AB\Tools\Console\Process;
 
 /**
  * Class Creator
@@ -70,8 +72,10 @@ class Creator implements IConsole
 	 * @method run - Это основной метод для запуска скрипта
 	 * @throws \Exception
 	 */
-	public function run()
+	public function run($params)
 	{
+		$this->params['params'] = $params;
+
 		$name = $this->params['params']['-name'];
 
 		if(strlen($name) > 0){

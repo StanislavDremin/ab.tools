@@ -1,77 +1,205 @@
-var path = require('path');
+import path from 'path';
+import is from 'is_js';
+import NODE_ENV from './nodeEnv';
+import fs from 'fs';
 
-var BXConfigComponent = function (componentName, templateName, dopParams) {
+const mainFolder = path.join('..');
+import MainConfig from './base.conf';
 
-	this.componentName = componentName;
+/**
+ * var BComponent = new BXComponent();
+ * BComponent.addComponent('subscribe.list', {
+		name: 'local:esd:subscribe.list' or 'bitrix:esd:subscribe.list',
+		template: '.default' or {site: 'bitrix:1c-interes_v2.0'},
+		app: ['main','src.js'],
+		build: ['public', 'build.js']
+	})
+ */
+class component {
+	constructor() {
+		if (MainConfig === null) {
+			throw new Error('Main configuration webpack is null');
+		}
 
-	if(!templateName || templateName == undefined || templateName === null){
-		templateName = path.join('.default');
+		this.entry = {dev: {}, prod: ''};
+		this.out = {dev: '', prod: ''};
+		this.components = {};
 	}
 
-	this.templateName = templateName;
+	addComponent(cName, params) {
+		if (!cName) {
+			throw new Error('Name parameters is empty');
+		}
 
-	if (!dopParams || dopParams == undefined) {
-		dopParams = {};
-	}
+		if (is.undefined(params.name) || is.empty(params.name)) {
+			throw new Error('Component name is empty');
+		}
 
-	this.systemTemplate = true;
-	if (dopParams.hasOwnProperty('system') && dopParams.system !== true)
-		this.systemTemplate = dopParams.system;
+		let name = params.name.trim().split(':');
+		let folder = '', namespace = '', nameComponent = '', templateComponent = '', pathToComponent = '';
 
-	this.pathIn = '';
-	this.pathOut = '';
+		templateComponent = name[2] != undefined ? name[2] : '.default';
 
-	this.dopParams = dopParams;
+		nameComponent = name[1];
 
-	this.arComponent = this.componentName.trim().split(':');
+		switch (name[0]) {
+			case 'bitrix':
+				folder = 'bitrix';
+				break;
+			default:
+				folder = 'local';
+				break;
+		}
 
-	if (this.arComponent.length <= 1) {
-		throw new Error('Укажи имя компонента в виде folder:componentName');
-	}
+		if (name.length < 2) {
+			throw new Error('Component name is not valid! For example must be "bitrix:news.list:.default"');
+		}
 
-	var pathToComponent = path.join(__dirname, '..', 'components',this.arComponent[0], this.arComponent[1]);
-
-	if (this.systemTemplate === true) {
-		if (this.dopParams.hasOwnProperty('in')) {
-			if (typeof(this.dopParams.in) !== 'object') {
-				this.dopParams.in = {}
-			}
-			if (this.dopParams.in.hasOwnProperty('folder')) {
-				this.pathIn = path.join(pathToComponent, this.dopParams.in.in.folder);
-			}
+		if (!is.propertyDefined(params, 'app')) {
+			params.app = path.join('app', 'app');
 		} else {
-			this.pathIn = path.join(pathToComponent, 'app', 'app.js');
-		}
-	}
-
-	this.pathOut = path.join(pathToComponent, 'templates', this.templateName);
-
-	this.getConfig = function (mainConfig, dir) {
-
-		if(!dir || dir == undefined){
-			dir = '';
+			let app = params.app;
+			params.app = '';
+			app.forEach(function (item, i) {
+				params.app = path.join(params.app, item);
+			});
 		}
 
-		if(!mainConfig || mainConfig == undefined || typeof(mainConfig) !== 'object'){
-			throw new Error('Основной конфиг не является объектом');
+		if (!is.propertyDefined(params, 'build')) {
+			params.build = path.join('script');
+		} else {
+			let build = params.build;
+			params.build = '';
+			build.forEach(function (item, i) {
+				params.build = path.join(params.build, item);
+			});
 		}
-		var conf = mainConfig;
-		var n = this.arComponent[1].split('.');
-		var newName = '';
 
-		n.forEach(function (item, i) {
-			newName += item.charAt(0).toUpperCase() + item.substr(1).toLowerCase();
-		});
+		let pathToComponentApp = '';
+		if (folder == 'bitrix') {
+			if (params.site == undefined) {
+				params.site = '.default';
+			}
 
-		conf.entry = {};
-		conf.entry[newName] = this.pathIn;
-		conf.output = {
-			path: this.pathOut,
-			filename: "script.js"
+			pathToComponent = path.join(
+				'local',
+				'templates',
+				params.site,
+				'components',
+				'bitrix',
+				nameComponent,
+				templateComponent
+			);
+			pathToComponentApp = pathToComponent;
+		} else if (params.site != undefined) {
+			pathToComponent = path.join(
+				'local',
+				'templates',
+				params.site,
+				'components',
+				name[0],
+				nameComponent,
+				templateComponent
+			);
+			pathToComponentApp = pathToComponent;
+		} else {
+			pathToComponent = path.join(
+				'local',
+				'components',
+				name[0],
+				nameComponent,
+			);
+
+			if(params.build === 'script'){
+				pathToComponent = path.join(pathToComponent, 'templates', templateComponent);
+			}
+			pathToComponentApp = path.join(
+				'local',
+				'components',
+				name[0],
+				nameComponent
+			);
+		}
+
+		let fileApp = path.resolve(mainFolder, pathToComponentApp, params.app);
+
+		this.entry.dev = {
+			[path.join(pathToComponent, params.build)]: fileApp
+		};
+		this.entry.prod = this.entry.dev;
+
+		this.createFile(this.entry.dev);
+
+		this.components[cName] = {
+			entry: this.entry.dev,
+			output: {
+				path: path.resolve(__dirname, '..'),
+				filename: "[name].js"
+			}
 		};
 
-		return conf;
-	};
-};
+		if (NODE_ENV == 'production') {
+			this.components[cName] = {
+				entry: this.entry.prod,
+				output: {
+					path: path.resolve(mainFolder),
+					filename: "[name].min.js"
+				}
+			};
+		}
 
-module.exports = BXConfigComponent;
+		return this;
+	};
+
+	mergeConfig(items = []) {
+
+		if (items.length == 0) {
+			throw new Error('Array of components is empty');
+		}
+
+		if (is.undefined(MainConfig)) {
+			throw new Error('Main configuration for webpack is undefined');
+		}
+
+		items.forEach((name, i) => {
+
+			if (!is.undefined(this.components[name])) {
+
+				if (is.undefined(MainConfig.entry)) {
+					MainConfig.entry = {};
+				}
+				if (is.undefined(MainConfig.output)) {
+					MainConfig.output = {};
+				}
+
+				MainConfig.entry = Object.assign(MainConfig.entry, this.components[name]['entry']);
+				MainConfig.output = Object.assign(MainConfig.output, this.components[name]['output']);
+			}
+		});
+
+		return MainConfig;
+	}
+
+	createFile(fileName) {
+		try {
+			let openSync = fs.openSync(fileName, "w+",);
+		} catch (err) {
+			try {
+				if (err.code == 'ENOENT') {
+					let dir = fileName.match(/^(.*)\/.*.js$/);
+					try {
+						let dirData = fs.mkdirSync(dir[1], '755');
+					} catch (e) {
+						console.info(e);
+					}
+
+					fs.writeSync(fileName, '');
+				}
+			} catch (errFile) {
+				console.warn('File ' + fileName + ' was not created by');
+			}
+		}
+	}
+}
+
+export default component;

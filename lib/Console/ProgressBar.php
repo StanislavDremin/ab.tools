@@ -18,7 +18,10 @@ class ProgressBar
 	public static function pre($data)
 	{
 		echo "\r\n";
-		print_r($data);
+		if(!empty($data))
+			print_r($data);
+		else
+			echo 'EMPTY';
 		echo "\r\n";
 	}
 

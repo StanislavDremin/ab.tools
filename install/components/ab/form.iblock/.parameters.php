@@ -9,12 +9,14 @@ use Bitrix\Main\Loader;
 use Bitrix\Iblock;
 use AB\Tools\Helpers\FormIblock as Helper;
 use Bitrix\Main;
-
+use Bitrix\Main\Localization\Loc;
 if (!Loader::includeModule('iblock'))
 	return;
 
 if (!Loader::includeModule('ab.tools'))
 	return;
+
+Main\Localization\Loc::loadMessages(__FILE__);
 
 $iblockExists = (!empty($arCurrentValues['IBLOCK_ID']) && (int)$arCurrentValues['IBLOCK_ID'] > 0);
 
@@ -30,7 +32,7 @@ $rsIBlock = CIBlock::GetList(array('SORT' => 'ASC'), $iblockFilter);
 while ($IB = $rsIBlock->Fetch())
 	$arIBlock[$IB['ID']] = '[' . $IB['ID'] . '] ' . $IB['NAME'];
 
-$arProperty = array();
+/*$arProperty = array();
 $forName = array('AB_CUR_DATE' => 'Номер заявки п\п и текущая дата-время');
 
 if ($iblockExists) {
@@ -56,7 +58,7 @@ if ($iblockExists) {
 		$propertyName = '[' . $code . '] ' . $field['NAME'];
 		$arProperty[$code] = $propertyName;
 	}
-}
+}*/
 
 $site = ($request["site"] <> ''? $request["site"] : ($request["src_site"] <> ''? $request["src_site"] : false));
 $arFilter = array("TYPE_ID" => "AB_FORMS", "ACTIVE" => "Y");
@@ -68,31 +70,31 @@ while($arType = $dbType->GetNext()) {
 	$arEvent[$arType["EVENT_NAME"]] = '['.$arType['EVENT_NAME'].'] '.$arType["NAME"];
 }
 
-$aInsert = array_merge(array(0 => 'Нет'), $arProperty);
+//$aInsert = array_merge(array(0 => 'Нет'), $arProperty);
 
 $arComponentParameters = array(
 	'GROUPS' => array(
-		'BASE' => array('NAME' => 'Основные настройки'),
-		'EMAIL' => array('NAME' => 'Отправка почты'),
-		'AUTO_INSERT' => array('NAME' => 'Автоподставнока данных для зареистрированных пользователей'),
-		'RENAMES' => array('NAME' => 'Переименование полей')
+		'BASE' => array('NAME' => Loc::getMessage('AB_TOOLS_FORM_IBLOCK_C_PARAM_BASE')),
+		'EMAIL' => array('NAME' => Loc::getMessage('AB_TOOLS_FORM_IBLOCK_C_PARAM_EMAIL')),
+		'AUTO_INSERT' => array('NAME' => Loc::getMessage('AB_TOOLS_FORM_IBLOCK_C_PARAM_AUTO_INSERT')),
+		'RENAMES' => array('NAME' => Loc::getMessage('AB_TOOLS_FORM_IBLOCK_C_PARAM_RENAMES'))
 	),
 	'PARAMETERS' => array(
 		'IBLOCK_TYPE' => array(
-			'NAME' => 'Тип инфоблока',
+			'NAME' => Loc::getMessage('AB_TOOLS_FORM_IBLOCK_C_PARAM_IBLOCK_TYPE'),
 			'TYPE' => 'LIST',
 			'VALUES' => $arIBlockType,
 			'REFRESH' => 'Y',
 			'PARENT' => 'BASE',
 		),
 		'IBLOCK_ID' => array(
-			'NAME' => 'ID инфоблока',
+			'NAME' => Loc::getMessage('AB_TOOLS_FORM_IBLOCK_C_PARAM_IBLOCK_ID'),
 			'TYPE' => 'LIST',
 			'VALUES' => $arIBlock,
 			'REFRESH' => 'Y',
 			'PARENT' => 'BASE',
 		),
-		'FIELDS' => array(
+		/*'FIELDS' => array(
 			'NAME' => 'Поля формы',
 			'TYPE' => 'LIST',
 			'MULTIPLE' => 'Y',
@@ -106,21 +108,21 @@ $arComponentParameters = array(
 			'MULTIPLE' => 'Y',
 			'VALUES' => array_merge(array(0 => 'Все'), $arProperty),
 			'PARENT' => 'BASE',
-		),
+		),*/
 		'FORM_ID' => array(
-			'NAME' => 'ID формы',
+			'NAME' => Loc::getMessage('AB_TOOLS_FORM_IBLOCK_C_PARAM_FORM_ID'),
 			'DEFAULT' => 'form_request'
 		),
 		'FORM_NAME_BLOCK' => array(
-			'NAME' => 'Название блока формы',
-			'DEFAULT' => 'Обратная связь'
+			'NAME' => Loc::getMessage('AB_TOOLS_FORM_IBLOCK_C_PARAM_FORM_NAME_BLOCK'),
+			'DEFAULT' => Loc::getMessage('AB_TOOLS_FORM_IBLOCK_C_PARAM_FORM_NAME_BLOCK_DEFAULT')
 		),
 		'BTN_SAVE' => array(
-			'NAME' => 'Название кнопки сохранения',
-			'DEFAULT' => 'Отправить'
+			'NAME' => Loc::getMessage('AB_TOOLS_FORM_IBLOCK_C_PARAM_BTN_SAVE'),
+			'DEFAULT' => Loc::getMessage('AB_TOOLS_FORM_IBLOCK_C_PARAM_BTN_SAVE_DEFAULT')
 		),
 		'EMAIL_EVENT' => array(
-			'NAME' => 'Шаблон почтового сообщения',
+			'NAME' => Loc::getMessage('AB_TOOLS_FORM_IBLOCK_C_PARAM_EMAIL_EVENT'),
 			'TYPE' => 'LIST',
 			'VALUES' => $arEvent,
 			'ADDITIONAL_VALUES' => 'Y',
@@ -128,10 +130,13 @@ $arComponentParameters = array(
 			'PARENT' => 'EMAIL',
 		),
 		'EMAIL_ADMIN' => array(
-			'NAME' => 'E-mail-ы администраторов(можно несколько через запятую)',
+			'NAME' => Loc::getMessage('AB_TOOLS_FORM_IBLOCK_C_PARAM_EMAIL_ADMIN'),
 			'PARENT' => 'EMAIL',
 		),
-		'A_INSERT_LOGIN' => array(
+		'GOOD_MESSAGE' => array(
+			'NAME' => Loc::getMessage('AB_TOOLS_FORM_IBLOCK_C_PARAM_GOOD_MESSAGE')
+		)
+		/*'A_INSERT_LOGIN' => array(
 			'NAME' => 'Логин',
 			'TYPE' => 'LIST',
 			'VALUES' => $aInsert,
@@ -154,15 +159,15 @@ $arComponentParameters = array(
 			'TYPE' => 'LIST',
 			'VALUES' => $forName,
 			'DEFAULT' => 'AB_CUR_DATE'
-		),
+		),*/
 	),
 );
 
-if(count($arProperty) > 0){
+/*if(count($arProperty) > 0){
 	foreach ($arProperty as $code => $arField) {
 		$arComponentParameters['PARAMETERS']['RENAME_'.$code] = array(
 			'NAME' => $arField,
 			'PARENT' => 'RENAMES'
 		);
 	}
-}
+}*/

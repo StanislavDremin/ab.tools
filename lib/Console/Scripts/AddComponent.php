@@ -5,10 +5,11 @@
  * Date: 25.11.2016
  */
 
-namespace AB\Tools\Console;
+namespace AB\Tools\Console\Scripts;
 
 use Bitrix\Main\IO\File;
 use Bitrix\Main;
+use AB\Tools\Console\ProgressBar;
 
 class AddComponent implements IConsole
 {
@@ -65,9 +66,10 @@ class AddComponent implements IConsole
 	 * @method run - Это основной метод для запуска скрипта
 	 * @throws \Exception
 	 */
-	public function run()
+	public function run($params)
 	{
 		$params = $this->params['params'];
+
 
 		if(strlen($params['-name']) == 0){
 			throw new Main\ArgumentException('Parameter -name is empty');
@@ -93,7 +95,7 @@ class AddComponent implements IConsole
 		$jsApp = new File($ClassFile->getDirectory()->getPhysicalPath().'/app/app.js');
 		$jsApp->putContents('');
 
-		$templeClass = file_get_contents(dirname(__FILE__).'/temple/cmp/class');
+		$templeClass = file_get_contents(dirname(__FILE__).'/../temple/cmp/class');
 		$templeClass = str_replace("#CLASS#", $params['-c'], $templeClass);
 		$res = $ClassFile->putContents($templeClass);
 		if($res == 0){

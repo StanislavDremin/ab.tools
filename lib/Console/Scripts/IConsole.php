@@ -5,14 +5,12 @@
  * Date: 24.11.16
  */
 
-namespace AB\Tools\Console;
+namespace AB\Tools\Console\Scripts;
 
 
 interface IConsole
 {
 
-	public function description();
-
-	public function run();
+	public function run($params);
 
 }
