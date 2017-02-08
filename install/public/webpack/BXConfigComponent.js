@@ -154,7 +154,8 @@ class component {
 	mergeConfig(items = []) {
 
 		if (items.length == 0) {
-			throw new Error('Array of components is empty');
+			// throw new Error('Array of components is empty');
+			return MainConfig;
 		}
 
 		if (is.undefined(MainConfig)) {
