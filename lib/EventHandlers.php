@@ -34,4 +34,25 @@ class EventHandlers
 			$CacheTag->clear();
 		}
 	}
+
+	public static function onIncludeHTMLEditorScript()
+	{
+		$path = '/local/modules/ab.tools/asset';
+		\CJSCore::RegisterExt('ab_html_edit', [
+			'js' => [
+				$path.'/js/shim/es6-shim.min.js',
+				$path.'/js/shim/es6-sham.min.js',
+				$path.'/js/react/react-with-addons.min.js',
+				$path.'/js/react/react-dom.min.js',
+				$path.'/js/htmlEditor/lib/prism.js',
+				$path.'/js/htmlEditor/build/ab.htmlEditor.js',
+			],
+			'css' => [
+//				'/bitrix/css/main/bootstrap.min.css',
+				$path.'/js/htmlEditor/lib/prism.css',
+				$path.'/css/ab_html_edit.css'
+			]
+		]);
+		\CJSCore::Init(array('jquery','ab_html_edit'));
+	}
 }

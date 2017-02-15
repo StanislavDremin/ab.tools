@@ -21,9 +21,12 @@ spl_autoload_register(function ($className) {
 	}
 });
 
-$root = \Bitrix\Main\Application::getDocumentRoot();
-$routesFile = $root.'/local/php_interface/ab.tools/routes.php';
-if(file_exists($routesFile) && is_readable($routesFile)){
-	/** @noinspection PhpIncludeInspection */
-	require_once $routesFile;
-}
+//$root = \Bitrix\Main\Application::getDocumentRoot();
+//$routesFile = $root.'/local/php_interface/ab.tools/routes.php';
+//if(file_exists($routesFile) && is_readable($routesFile)){
+//	/** @noinspection PhpIncludeInspection */
+//	require_once $routesFile;
+//}
+
+//$ev = \Bitrix\Main\EventManager::getInstance();
+//$ev->registerEventHandlerCompatible('fileman','OnBeforeHTMLEditorScriptRuns', 'ab.tools', '\AB\Tools\EventHandlers', 'onIncludeHTMLEditorScript');

@@ -40,7 +40,8 @@ class ab_tools extends CModule
 
 		$this->events = [
 			['main', 'OnPageStart', $this->MODULE_ID, '\AB\Tools\EventHandlers', 'onPageStart'],
-			['main', 'OnProlog', $this->MODULE_ID, '\AB\Tools\EventHandlers', 'OnProlog']
+			['main', 'OnProlog', $this->MODULE_ID, '\AB\Tools\EventHandlers', 'OnProlog'],
+			['fileman', 'OnBeforeHTMLEditorScriptRuns', $this->MODULE_ID, '\AB\Tools\EventHandlers', 'onIncludeHTMLEditorScript'],
 		];
 	}
 
