@@ -34,11 +34,14 @@ class Manager
 	protected $params = [];
 	protected $route = null;
 	private $htmlMode = false;
+	private $siteId = null;
+	private $querySearch;
 
 	/** @var AjaxResult */
 	protected $result;
 	/** @var  Main\Type\Dictionary */
 	protected $data;
+
 
 	const SYSTEM_ERR_CODE = 'SYSTEM';
 
@@ -76,11 +79,13 @@ class Manager
 				$arSite = \Bitrix\Main\SiteDomainTable::getRow(['filter' => ['=DOMAIN' => $server->get('HTTP_HOST')]]);
 				$siteId = $arSite['LID'];
 			}
-
+			$this->siteId = $siteId;
+			$this->querySearch = $querySearch;
 			$arRoute = Main\UrlRewriter::getList($siteId, ['CONDITION' => $querySearch])[0];
 			if (empty($arRoute)){
 				throw new RestException('Route is not exist', 40);
 			}
+
 			$this->route = $arRoute;
 			$mainParams = [
 				'CLASS' => $arRoute['PATH'],
@@ -219,9 +224,14 @@ class Manager
 					if (!preg_match('/\/index.php$/i', $Uri->getPath()) && !substr($realPath, -1, 1) != 'p'){
 						$realPath .= 'index.php';
 					}
+					$paramFilter = ['=REAL_PATH' => $realPath, '=COMPONENT_NAME' => $component];
+					if(substr($this->route['RULE'], 0, 1) == '/'){
+						$paramFilter['=REAL_PATH'] = trim($this->route['RULE']);
+					}
 					$arParams = Main\Component\ParametersTable::getRow([
-						'filter' => ['=REAL_PATH' => $realPath, '=COMPONENT_NAME' => $component],
+						'filter' => $paramFilter,
 					]);
+
 					$ob->onPrepareComponentParams(unserialize($arParams['PARAMETERS']));
 				}
 			}

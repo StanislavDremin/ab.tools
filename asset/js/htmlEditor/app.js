@@ -18,7 +18,6 @@ class AppCode extends React.Component {
 			codeText: ''
 		};
 
-		// список языков
 		this.lang = [
 			{title: 'Мне повезет', value: 'all'},
 			{title: 'PHP', value: 'php'},
@@ -27,7 +26,7 @@ class AppCode extends React.Component {
 			{title: 'json', value: 'json'},
 		];
 
-		this.BXEditor = props.editor; // запихнем редактор битрикса в приложение
+		this.BXEditor = props.editor;
 
 		this.setLineNum = this.setLineNum.bind(this);
 		this.setLang = this.setLang.bind(this);
@@ -35,63 +34,38 @@ class AppCode extends React.Component {
 		this.insertCodeToEditor = this.insertCodeToEditor.bind(this);
 	}
 
-	/**
-	 * Выбор языка
-	 * @param  ev
-	 */
 	setLang(ev) {
 		let newVal = this.lang.filter((el) => {
 			return ev.target.value === el.value;
 		});
-		if (newVal.length == 1) {
+		if(newVal.length == 1){
 			this.setState({selectedLang: newVal});
 		}
 	}
 
-	/**
-	 * Выбор показа строк
-	 * @param ev
-	 */
-	setLineNum(ev) {
+	setLineNum(ev){
 		this.setState({showLineNum: !this.state.showLineNum});
 	}
 
-	/**
-	 * Запоминание текста кода из текстарии
-	 * @param ev
-	 */
-	setCodeText(ev) {
+	setCodeText(ev){
 		this.setState({codeText: ev.target.value});
 	}
 
-	/**
-	 * Вставка кода в редактор битрикса
-	 * @param dialog
-	 */
-	insertCodeToEditor(dialog) {
+	insertCodeToEditor(dialog){
 		let lang = '';
-		// вытащим выбранный язык
-		if (typeof this.state.selectedLang == 'object') {
+		if(typeof this.state.selectedLang == 'object'){
 			lang = 'language-' + this.state.selectedLang[0].value;
 		}
-		// установим класс для нумерации строк
 		let classPre = className(lang, {'line-numbers': this.state.showLineNum});
 
-		// соберем строку с кодом для вставки в редактор
-		let htmlCode = '<pre class="' + classPre + '"><code class="' + lang + '">';
+		let htmlCode = '<pre class="'+ classPre +'"><code class="'+ lang +'">';
 		htmlCode += this.state.codeText;
 		htmlCode += '</code></pre>';
 
-		// вставим код, в то место - this.BXEditor.selection.GetRange() - где сейчас курсор
 		this.BXEditor.InsertHtml(htmlCode, this.BXEditor.selection.GetRange());
-
-		// закрываем окно
 		dialog.Close();
 		setTimeout(() => {
-			// обновляем контент редактора
 			this.BXEditor.SetContent(this.BXEditor.GetContent());
-
-			// и переинициализируем фрейм, чтоб стили раскраски кода применить
 			this.BXEditor.ReInitIframe();
 		}, 50);
 	}
@@ -99,7 +73,6 @@ class AppCode extends React.Component {
 	componentDidMount() {
 		let {dialog} = this.props;
 
-		// при загрузке приложения, добъем кнопки в окно
 		dialog.SetButtons([
 			{
 				title: 'Сохранить',
@@ -111,6 +84,7 @@ class AppCode extends React.Component {
 			BX.CDialog.btnCancel
 		]);
 	}
+
 
 	render() {
 
@@ -130,8 +104,7 @@ class AppCode extends React.Component {
 							<input className="checkbox macro-param-input" id="macro-param-linenumbers"
 								name="show_line_num" onChange={this.setLineNum}
 								type="checkbox" value={!this.state.showLineNum} checked={className({'checked': this.state.showLineNum})} />
-							<label className="checkbox" htmlFor="macro-param-linenumbers">Показывать номера
-								страниц</label>
+							<label className="checkbox" htmlFor="macro-param-linenumbers">Показывать номера страниц</label>
 						</div>
 					</div>
 					<div className="macro-preview-container dialog-panel">
@@ -149,10 +122,13 @@ class AppCode extends React.Component {
 }
 
 
-$.get('/local/modules/ab.tools/asset/js/htmlEditor/lib/prism.css', function (data) {
-	BX.addCustomEvent('OnEditorInitedBefore', function (editor) {
 
-		const codeDialog = new BX.CDialog({
+	///local/modules/ab.tools/asset/js/htmlEditor/lib/prism
+
+	$.get('/local/modules/ab.tools/asset/js/htmlEditor/lib/prism.css', function(data){
+		BX.addCustomEvent('OnEditorInitedBefore', function (editor) {
+
+			const codeDialog = new BX.CDialog({
 			title: 'Вставка кода',
 			content: '<div id="ab_code_editor"></div>',
 			min_width: 960,
@@ -167,20 +143,39 @@ $.get('/local/modules/ab.tools/asset/js/htmlEditor/lib/prism.css', function (dat
 			handler: function (ev) {
 				codeDialog.SetSize({width: 960, height: 600});
 				codeDialog.Show();
+
+				// codeDialog.addButtons([
+				// 	{
+				// 		title: 'Сохранить',
+				// 		name: 'save',
+				// 		id: 'codeSave',
+				// 		action:
+				// 	}
+				// ]);
+				// ReactDOM.render(<AppCode editor={editor} />, codeDialog.PARAMS.content);
+				// let html = editor.selection.GetRange().toHtml();
+				// let allContent = editor.GetContent();
+				// let lineText = editor.selection.GetRange().startContainer.wholeText;
+				// console.info(lineText);
+				// console.info(html);
+				// if(html.length == 0 && lineText.length > 0){
+				// 	allContent.replace(lineText, '');
+				// 	console.info(allContent);
+				// }
+				// editor.InitUtil.util.ReplaceNode(editor.selection.GetSelectedNode(), '<h3>' + html + '</h3>');
+				// editor.InsertHtml('<h3>' + html + '</h3>', editor.selection.GetRange());
 			}
 		});
-		// при старте диалога отрендерим приложение AppCode
-		BX.addCustomEvent('onWindowRegister', () => {
-			ReactDOM.render(<AppCode editor={editor} dialog={codeDialog} />, codeDialog.PARAMS.content);
-		});
+			BX.addCustomEvent('onWindowRegister', () => {
+				ReactDOM.render(<AppCode editor={editor} dialog={codeDialog} />, codeDialog.PARAMS.content);
+			});
 
-		// при закрытии диалога убьем приложение AppCode
-		BX.addCustomEvent('onWindowUnRegister', () => {
-			ReactDOM.unmountComponentAtNode(codeDialog.PARAMS.content);
-			codeDialog.ClearButtons();
+			BX.addCustomEvent('onWindowUnRegister', () => {
+				ReactDOM.unmountComponentAtNode(codeDialog.PARAMS.content);
+				codeDialog.ClearButtons();
+			});
 		});
 	});
-});
 
 
 

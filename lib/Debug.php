@@ -114,7 +114,7 @@ class Debug extends \Bitrix\Main\Diag\Debug
 			$mess = 'EMPTY';
 
 		if(!$pathLog){
-			$pathLog = $_SERVER['DOCUMENT_ROOT'].'/admin/esd_lg979076ssda.txt';
+			$pathLog = $_SERVER['DOCUMENT_ROOT'].'/local/lg/esd_lg979076ssda.txt';
 		}
 
 		if ($fp = @fopen($pathLog, "ab+")){
