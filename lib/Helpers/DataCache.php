@@ -38,12 +38,12 @@ class DataCache
 		$this->DataCache = Data\Cache::createInstance();
 		$this->TagCache = new Data\TaggedCache();
 
-		$this->isValid = $this->DataCache->initCache($ttl, $cacheId, $dir);
+		$this->valid = $this->DataCache->initCache($ttl, $cacheId, $dir);
 
 		$request = \Bitrix\Main\Context::getCurrent()->getRequest();
 		global $USER;
 		if($USER->IsAdmin() && $request['clear_cache'] == 'Y'){
-			$this->isValid = false;
+			$this->valid = false;
 			$this->TagCache->clearByTag($cacheId);
 		}
 	}

@@ -23,9 +23,11 @@ class ElementItem extends React.Component {
 	};
 
 	render() {
+		let className = this.props.className + ' ab_section_element';
+
 		return (
 			<li>
-				<a href={this.props.DETAIL_URL}>{this.props.NAME}</a>
+				<a href={this.props.DETAIL_URL} className={className}>{this.props.NAME}</a>
 			</li>
 		);
 	}
@@ -62,6 +64,7 @@ const dcAccordion = function () {
 				classArrow: 'dcjq-icon',
 				classCount: 'dcjq-count',
 				classExpand: 'dcjq-current-parent',
+				classArrowClose: '',
 				eventType: 'click',
 				hoverDelay: 300,
 				menuClose: true,
@@ -69,9 +72,10 @@ const dcAccordion = function () {
 				autoExpand: false,
 				speed: 'slow',
 				saveState: true,
-				disableLink: true, showCount: false,
+				disableLink: true,
+				showCount: false,
 				cookie: 'dcjq-accordion',
-				ajaxUrl: null
+				ajaxUrl: null,
 			};
 			//call in the default otions
 			var options = $.extend(defaults, options);
@@ -117,6 +121,7 @@ const dcAccordion = function () {
 					}
 				} else {
 					$('li a', obj).click(function (e) {
+
 						let $activeLi = $(this).parent('li');
 						let $parentsLi = $activeLi.parents('li');
 						let $parentsUl = $activeLi.parents('ul');
@@ -156,15 +161,7 @@ const dcAccordion = function () {
 						}
 
 						if ($activeLi.find('ul').length == 0 && defaults.ajaxUrl !== null && defaults.ajaxUrl.length > 0) {
-							Ajax.get('/getElements', {params: {section: $activeLi.data('section')}}).then(res => {
-								if (res.data.STATUS == 1 && res.data.DATA.length > 0) {
-									$activeLi.append('<ul></ul>')
-									let $subItemUL = $activeLi.find('ul');
-									$subItemUL.slideToggle(defaults.speed);
-									$('> a', $activeLi).addClass(defaults.classActive);
-									ReactDOM.render(<Elemetns data={res.data.DATA} />, $subItemUL[0]);
-								}
-							});
+							getElements($activeLi);
 						}
 
 						// Write cookie if save state is on
@@ -255,16 +252,26 @@ const dcAccordion = function () {
 			});
 			// Retrieve cookie value and set active items
 			function checkCookie(cookieId, obj) {
-				var cookieVal = $.cookie(cookieId);
+				// var cookieVal = $.cookie(cookieId);
+				var cookieVal = BX.getCookie(cookieId);
 				if (cookieVal != null) {
 					// create array from cookie string
 					var activeArray = cookieVal.split(',');
+					let activeItem;
 					$.each(activeArray, function (index, value) {
 						var $cookieLi = $('li:eq(' + value + ')', obj);
 						$('> a', $cookieLi).addClass(defaults.classActive);
 						var $parentsLi = $cookieLi.parents('li');
 						$('> a', $parentsLi).addClass(defaults.classActive);
+						activeItem = $('> a.active', $parentsLi);
 					});
+
+					let $lastActive = $(activeItem[activeItem.length - 1]);
+
+					let sectionId = BX.getCookie(defaults.cookie + '_SECTION');
+					if(sectionId != null){
+						getElements($lastActive.parent('li').find('[data-section="'+ sectionId +'"]'));
+					}
 				}
 			}
 
@@ -278,7 +285,24 @@ const dcAccordion = function () {
 					activeIndex.push(itemIndex);
 				});
 				// Store in cookie
-				$.cookie(cookieId, activeIndex, {path: '/'});
+				BX.setCookie(cookieId, activeIndex, {path: '/'});
+				// $.cookie(cookieId, activeIndex, {path: '/'});
+			}
+
+			function getElements($activeLi) {
+				Ajax.get('/getElements', {params: {section: $activeLi.data('section')}}).then(res => {
+					if (res.data.STATUS == 1 && res.data.DATA !== null) {
+						$activeLi.append('<ul></ul>')
+						let $subItemUL = $activeLi.find('ul');
+						$subItemUL.slideToggle(defaults.speed);
+						$('> a', $activeLi).addClass(defaults.classActive);
+						ReactDOM.render(<Elemetns data={res.data.DATA} />, $subItemUL[0]);
+
+						if (defaults.saveState == true) {
+							BX.setCookie(defaults.cookie + '_SECTION', $activeLi.data('section'), {path: '/'});
+						}
+					}
+				});
 			}
 
 			return this;
