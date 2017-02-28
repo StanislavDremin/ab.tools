@@ -7,6 +7,7 @@
 /** @var o $ */
 "use strict";
 import className from 'classnames';
+import options from './options';
 
 class AppCode extends React.Component {
 	constructor(props) {
@@ -24,6 +25,7 @@ class AppCode extends React.Component {
 			{title: 'JavaScript', value: 'javascript'},
 			{title: 'React JSX', value: 'jsx'},
 			{title: 'json', value: 'json'},
+			{title: 'Html', value: 'html'},
 		];
 
 		this.BXEditor = props.editor;
@@ -38,28 +40,28 @@ class AppCode extends React.Component {
 		let newVal = this.lang.filter((el) => {
 			return ev.target.value === el.value;
 		});
-		if(newVal.length == 1){
+		if (newVal.length == 1) {
 			this.setState({selectedLang: newVal});
 		}
 	}
 
-	setLineNum(ev){
+	setLineNum(ev) {
 		this.setState({showLineNum: !this.state.showLineNum});
 	}
 
-	setCodeText(ev){
+	setCodeText(ev) {
 		this.setState({codeText: ev.target.value});
 	}
 
-	insertCodeToEditor(dialog){
+	insertCodeToEditor(dialog) {
 		let lang = '';
-		if(typeof this.state.selectedLang == 'object'){
+		if (typeof this.state.selectedLang == 'object') {
 			lang = 'language-' + this.state.selectedLang[0].value;
 		}
 		let classPre = className(lang, {'line-numbers': this.state.showLineNum});
 
-		let htmlCode = '<pre class="'+ classPre +'"><code class="'+ lang +'">';
-		htmlCode += this.state.codeText;
+		let htmlCode = '<pre class="' + classPre + '"><code class="' + lang + '">';
+		htmlCode += BX.util.htmlspecialchars(this.state.codeText);
 		htmlCode += '</code></pre>';
 
 		this.BXEditor.InsertHtml(htmlCode, this.BXEditor.selection.GetRange());
@@ -104,7 +106,8 @@ class AppCode extends React.Component {
 							<input className="checkbox macro-param-input" id="macro-param-linenumbers"
 								name="show_line_num" onChange={this.setLineNum}
 								type="checkbox" value={!this.state.showLineNum} checked={className({'checked': this.state.showLineNum})} />
-							<label className="checkbox" htmlFor="macro-param-linenumbers">Показывать номера страниц</label>
+							<label className="checkbox" htmlFor="macro-param-linenumbers">Показывать номера
+								страниц</label>
 						</div>
 					</div>
 					<div className="macro-preview-container dialog-panel">
@@ -122,18 +125,12 @@ class AppCode extends React.Component {
 }
 
 
+///local/modules/ab.tools/asset/js/htmlEditor/lib/prism
 
-	///local/modules/ab.tools/asset/js/htmlEditor/lib/prism
+$.get('/local/modules/ab.tools/asset/js/htmlEditor/lib/prism.css', function (data) {
+	BX.addCustomEvent('OnEditorInitedBefore', function (editor) {
 
-	$.get('/local/modules/ab.tools/asset/js/htmlEditor/lib/prism.css', function(data){
-		BX.addCustomEvent('OnEditorInitedBefore', function (editor) {
-
-			const codeDialog = new BX.CDialog({
-			title: 'Вставка кода',
-			content: '<div id="ab_code_editor"></div>',
-			min_width: 960,
-			min_height: 600,
-		});
+		const codeDialog = new BX.CDialog(options.DIALOG_PARAMS);
 
 		editor.iframeCssText = data;
 		this.AddButton({
@@ -141,7 +138,7 @@ class AppCode extends React.Component {
 			id: 'ab_html_edit_code_btn',
 			name: 'test',
 			handler: function (ev) {
-				codeDialog.SetSize({width: 960, height: 600});
+
 				codeDialog.Show();
 
 				// codeDialog.addButtons([
@@ -166,16 +163,17 @@ class AppCode extends React.Component {
 				// editor.InsertHtml('<h3>' + html + '</h3>', editor.selection.GetRange());
 			}
 		});
-			BX.addCustomEvent('onWindowRegister', () => {
-				ReactDOM.render(<AppCode editor={editor} dialog={codeDialog} />, codeDialog.PARAMS.content);
-			});
+		BX.addCustomEvent('onWindowRegister', () => {
+			codeDialog.DIV.style.zIndex = 3010;
+			ReactDOM.render(<AppCode editor={editor} dialog={codeDialog} />, codeDialog.PARAMS.content);
+		});
 
-			BX.addCustomEvent('onWindowUnRegister', () => {
-				ReactDOM.unmountComponentAtNode(codeDialog.PARAMS.content);
-				codeDialog.ClearButtons();
-			});
+		BX.addCustomEvent('onWindowUnRegister', () => {
+			ReactDOM.unmountComponentAtNode(codeDialog.PARAMS.content);
+			codeDialog.ClearButtons();
 		});
 	});
+});
 
 
 
