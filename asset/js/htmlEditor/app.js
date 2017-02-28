@@ -14,18 +14,26 @@ class AppCode extends React.Component {
 		super(props);
 
 		this.state = {
-			selectedLang: 'all',
+			selectedLang: 'markup',
 			showLineNum: true,
 			codeText: ''
 		};
 
 		this.lang = [
-			{title: 'Мне повезет', value: 'all'},
+			{title: 'Мне повезет', value: 'markup'},
 			{title: 'PHP', value: 'php'},
 			{title: 'JavaScript', value: 'javascript'},
 			{title: 'React JSX', value: 'jsx'},
-			{title: 'json', value: 'json'},
+			{title: 'JSON', value: 'json'},
 			{title: 'Html', value: 'html'},
+			{title: 'Css', value: 'css'},
+			{title: 'Less', value: 'less'},
+			{title: 'Sass', value: 'sass'},
+			{title: 'Scss', value: 'scss'},
+			{title: 'HTTP', value: 'http'},
+			{title: 'PowerShell', value: 'powershell'},
+			{title: 'SQL', value: 'sql'},
+			{title: 'YAML', value: 'yaml'},
 		];
 
 		this.BXEditor = props.editor;
@@ -57,6 +65,8 @@ class AppCode extends React.Component {
 		let lang = '';
 		if (typeof this.state.selectedLang == 'object') {
 			lang = 'language-' + this.state.selectedLang[0].value;
+		} else {
+			lang = 'language-' + this.lang[0].value;
 		}
 		let classPre = className(lang, {'line-numbers': this.state.showLineNum});
 
@@ -125,22 +135,25 @@ class AppCode extends React.Component {
 }
 
 
-///local/modules/ab.tools/asset/js/htmlEditor/lib/prism
-
 $.get('/local/modules/ab.tools/asset/js/htmlEditor/lib/prism.css', function (data) {
 	BX.addCustomEvent('OnEditorInitedBefore', function (editor) {
 
-		const codeDialog = new BX.CDialog(options.DIALOG_PARAMS);
-
 		editor.iframeCssText = data;
+		editor.RegisterDialog(options.CODE_EDITOR_DIALOG_ID + editor.config.id, BX.CDialog);
+
+		const codeDialog = editor.GetDialog(options.CODE_EDITOR_DIALOG_ID + editor.config.id, options.DIALOG_PARAMS);
+		codeDialog.SetContent('<div id="ab_code_editor_' + editor.config.id + '"></div>');
+		codeDialog.SetSize({width: 960, height: 600,});
+
 		this.AddButton({
 			iconClassName: 'ab_html_edit_code',
 			id: 'ab_html_edit_code_btn',
 			name: 'test',
 			handler: function (ev) {
-
 				codeDialog.Show();
-
+				ReactDOM.render(<AppCode editor={editor} dialog={codeDialog} />, codeDialog.GetContent());
+				codeDialog.DIV.style.zIndex = 3010;
+				codeDialog.OVERLAY.style.zIndex = 3005;
 				// codeDialog.addButtons([
 				// 	{
 				// 		title: 'Сохранить',
@@ -163,13 +176,18 @@ $.get('/local/modules/ab.tools/asset/js/htmlEditor/lib/prism.css', function (dat
 				// editor.InsertHtml('<h3>' + html + '</h3>', editor.selection.GetRange());
 			}
 		});
-		BX.addCustomEvent('onWindowRegister', () => {
-			codeDialog.DIV.style.zIndex = 3010;
-			ReactDOM.render(<AppCode editor={editor} dialog={codeDialog} />, codeDialog.PARAMS.content);
-		});
+
+		// BX.addCustomEvent('onWindowRegister', () => {
+		// 	codeDialog.DIV.style.zIndex = 3010;
+		// 	ReactDOM.render(<AppCode editor={editor} dialog={codeDialog} />, codeDialog.PARAMS.content);
+		// });
+
+		// BX.addCustomEvent('onWindowResize', () => {
+		// 	console.info(codeDialog);
+		// });
 
 		BX.addCustomEvent('onWindowUnRegister', () => {
-			ReactDOM.unmountComponentAtNode(codeDialog.PARAMS.content);
+			ReactDOM.unmountComponentAtNode(codeDialog.GetContent());
 			codeDialog.ClearButtons();
 		});
 	});

@@ -98,12 +98,12 @@
 			var _this = (0, _possibleConstructorReturn3.default)(this, (AppCode.__proto__ || (0, _getPrototypeOf2.default)(AppCode)).call(this, props));
 
 			_this.state = {
-				selectedLang: 'all',
+				selectedLang: 'markup',
 				showLineNum: true,
 				codeText: ''
 			};
 
-			_this.lang = [{ title: 'Мне повезет', value: 'all' }, { title: 'PHP', value: 'php' }, { title: 'JavaScript', value: 'javascript' }, { title: 'React JSX', value: 'jsx' }, { title: 'json', value: 'json' }, { title: 'Html', value: 'html' }];
+			_this.lang = [{ title: 'Мне повезет', value: 'markup' }, { title: 'PHP', value: 'php' }, { title: 'JavaScript', value: 'javascript' }, { title: 'React JSX', value: 'jsx' }, { title: 'JSON', value: 'json' }, { title: 'Html', value: 'html' }, { title: 'Css', value: 'css' }, { title: 'Less', value: 'less' }, { title: 'Sass', value: 'sass' }, { title: 'Scss', value: 'scss' }, { title: 'HTTP', value: 'http' }, { title: 'PowerShell', value: 'powershell' }, { title: 'SQL', value: 'sql' }, { title: 'YAML', value: 'yaml' }];
 
 			_this.BXEditor = props.editor;
 
@@ -142,6 +142,8 @@
 				var lang = '';
 				if ((0, _typeof3.default)(this.state.selectedLang) == 'object') {
 					lang = 'language-' + this.state.selectedLang[0].value;
+				} else {
+					lang = 'language-' + this.lang[0].value;
 				}
 				var classPre = (0, _classnames2.default)(lang, { 'line-numbers': this.state.showLineNum });
 
@@ -179,7 +181,7 @@
 					'div',
 					{ className: 'block_code_wrap', __source: {
 							fileName: _jsxFileName,
-							lineNumber: 94
+							lineNumber: 104
 						},
 						__self: this
 					},
@@ -187,7 +189,7 @@
 						'div',
 						{ className: 'macro-insert-container', __source: {
 								fileName: _jsxFileName,
-								lineNumber: 95
+								lineNumber: 105
 							},
 							__self: this
 						},
@@ -195,7 +197,7 @@
 							'div',
 							{ className: 'macro-input-fields dialog-panel', __source: {
 									fileName: _jsxFileName,
-									lineNumber: 96
+									lineNumber: 106
 								},
 								__self: this
 							},
@@ -203,7 +205,7 @@
 								'div',
 								{ className: 'macro-param-div', id: 'macro-param-div-language', __source: {
 										fileName: _jsxFileName,
-										lineNumber: 97
+										lineNumber: 107
 									},
 									__self: this
 								},
@@ -211,7 +213,7 @@
 									'label',
 									{ htmlFor: 'macro-param-language', __source: {
 											fileName: _jsxFileName,
-											lineNumber: 98
+											lineNumber: 108
 										},
 										__self: this
 									},
@@ -221,7 +223,7 @@
 									'select',
 									{ name: 'ab_select_lang', className: 'select', id: 'ab_select_lang', onChange: this.setLang, __source: {
 											fileName: _jsxFileName,
-											lineNumber: 99
+											lineNumber: 109
 										},
 										__self: this
 									},
@@ -230,7 +232,7 @@
 											'option',
 											{ key: el.value, value: el.value, __source: {
 													fileName: _jsxFileName,
-													lineNumber: 101
+													lineNumber: 111
 												},
 												__self: _this3
 											},
@@ -243,7 +245,7 @@
 								'div',
 								{ className: 'checkbox macro-param-div boolean-param', __source: {
 										fileName: _jsxFileName,
-										lineNumber: 105
+										lineNumber: 115
 									},
 									__self: this
 								},
@@ -251,7 +253,7 @@
 									name: 'show_line_num', onChange: this.setLineNum,
 									type: 'checkbox', value: !this.state.showLineNum, checked: (0, _classnames2.default)({ 'checked': this.state.showLineNum }), __source: {
 										fileName: _jsxFileName,
-										lineNumber: 106
+										lineNumber: 116
 									},
 									__self: this
 								}),
@@ -259,7 +261,7 @@
 									'label',
 									{ className: 'checkbox', htmlFor: 'macro-param-linenumbers', __source: {
 											fileName: _jsxFileName,
-											lineNumber: 109
+											lineNumber: 119
 										},
 										__self: this
 									},
@@ -271,7 +273,7 @@
 							'div',
 							{ className: 'macro-preview-container dialog-panel', __source: {
 									fileName: _jsxFileName,
-									lineNumber: 113
+									lineNumber: 123
 								},
 								__self: this
 							},
@@ -279,7 +281,7 @@
 								'div',
 								{ className: 'macro-preview-header', __source: {
 										fileName: _jsxFileName,
-										lineNumber: 114
+										lineNumber: 124
 									},
 									__self: this
 								},
@@ -288,7 +290,7 @@
 									{
 										__source: {
 											fileName: _jsxFileName,
-											lineNumber: 115
+											lineNumber: 125
 										},
 										__self: this
 									},
@@ -299,7 +301,7 @@
 								'div',
 								{ id: 'macro-browser-preview', className: 'macro-preview', __source: {
 										fileName: _jsxFileName,
-										lineNumber: 117
+										lineNumber: 127
 									},
 									__self: this
 								},
@@ -307,7 +309,7 @@
 									'textarea',
 									{ className: 'code_block_text', name: 'code_block_text', onChange: this.setCodeText, __source: {
 											fileName: _jsxFileName,
-											lineNumber: 118
+											lineNumber: 128
 										},
 										__self: this
 									},
@@ -322,23 +324,30 @@
 		return AppCode;
 	}(React.Component);
 
-	///local/modules/ab.tools/asset/js/htmlEditor/lib/prism
-
 	$.get('/local/modules/ab.tools/asset/js/htmlEditor/lib/prism.css', function (data) {
 		BX.addCustomEvent('OnEditorInitedBefore', function (editor) {
-			var _this4 = this;
-
-			var codeDialog = new BX.CDialog(_options2.default.DIALOG_PARAMS);
 
 			editor.iframeCssText = data;
+			editor.RegisterDialog(_options2.default.CODE_EDITOR_DIALOG_ID + editor.config.id, BX.CDialog);
+
+			var codeDialog = editor.GetDialog(_options2.default.CODE_EDITOR_DIALOG_ID + editor.config.id, _options2.default.DIALOG_PARAMS);
+			codeDialog.SetContent('<div id="ab_code_editor_' + editor.config.id + '"></div>');
+			codeDialog.SetSize({ width: 960, height: 600 });
+
 			this.AddButton({
 				iconClassName: 'ab_html_edit_code',
 				id: 'ab_html_edit_code_btn',
 				name: 'test',
 				handler: function handler(ev) {
-
 					codeDialog.Show();
-
+					ReactDOM.render(React.createElement(AppCode, { editor: editor, dialog: codeDialog, __source: {
+							fileName: _jsxFileName,
+							lineNumber: 154
+						},
+						__self: this
+					}), codeDialog.GetContent());
+					codeDialog.DIV.style.zIndex = 3010;
+					codeDialog.OVERLAY.style.zIndex = 3005;
 					// codeDialog.addButtons([
 					// 	{
 					// 		title: 'Сохранить',
@@ -361,18 +370,18 @@
 					// editor.InsertHtml('<h3>' + html + '</h3>', editor.selection.GetRange());
 				}
 			});
-			BX.addCustomEvent('onWindowRegister', function () {
-				codeDialog.DIV.style.zIndex = 3010;
-				ReactDOM.render(React.createElement(AppCode, { editor: editor, dialog: codeDialog, __source: {
-						fileName: _jsxFileName,
-						lineNumber: 168
-					},
-					__self: _this4
-				}), codeDialog.PARAMS.content);
-			});
+
+			// BX.addCustomEvent('onWindowRegister', () => {
+			// 	codeDialog.DIV.style.zIndex = 3010;
+			// 	ReactDOM.render(<AppCode editor={editor} dialog={codeDialog} />, codeDialog.PARAMS.content);
+			// });
+
+			// BX.addCustomEvent('onWindowResize', () => {
+			// 	console.info(codeDialog);
+			// });
 
 			BX.addCustomEvent('onWindowUnRegister', function () {
-				ReactDOM.unmountComponentAtNode(codeDialog.PARAMS.content);
+				ReactDOM.unmountComponentAtNode(codeDialog.GetContent());
 				codeDialog.ClearButtons();
 			});
 		});
@@ -1982,11 +1991,9 @@
 		CODE_EDITOR_DIALOG_ID: 'code_editor_dialog',
 		DIALOG_PARAMS: {
 			title: 'Вставка кода',
-			content: '<div id="ab_code_editor"></div>',
+			// content: '<div id="ab_code_editor"></div>',
 			min_width: 960,
-			min_height: 600,
-			width: 960,
-			height: 600
+			min_height: 600
 		}
 	};
 

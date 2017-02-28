@@ -11,11 +11,9 @@ const options = {
 	CODE_EDITOR_DIALOG_ID: 'code_editor_dialog',
 	DIALOG_PARAMS: {
 		title: 'Вставка кода',
-		content: '<div id="ab_code_editor"></div>',
+		// content: '<div id="ab_code_editor"></div>',
 		min_width: 960,
 		min_height: 600,
-		width: 960,
-		height: 600,
 	}
 };
 
